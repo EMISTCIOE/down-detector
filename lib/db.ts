@@ -20,11 +20,25 @@ export function getDb() {
       throw new Error("DATABASE_URL environment variable is not set");
     }
 
+    // NOTE: Using connectionString together with ssl options can result in
+    // sslmode from the URL taking precedence and re-enabling verification
+    // (causing SELF_SIGNED_CERT_IN_CHAIN on Vercel). To avoid that, we parse
+    // the URL ourselves and pass discrete options to pg.Pool.
+    const u = new URL(connectionString);
+
+    const host = u.hostname;
+    const port = Number(u.port || 5432);
+    const user = decodeURIComponent(u.username || "");
+    const password = decodeURIComponent(u.password || "");
+    const database = u.pathname.replace(/^\//, "");
+
     pool = new Pool({
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      host,
+      port,
+      user,
+      password,
+      database,
+      ssl: { rejectUnauthorized: false },
       max: 5,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 1000,
