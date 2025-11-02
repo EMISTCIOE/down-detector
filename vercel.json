@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/check-status",
-      "schedule": "@daily"
-    }
-  ]
-}
