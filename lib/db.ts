@@ -39,9 +39,19 @@ export function getDb() {
       password,
       database,
       ssl: { rejectUnauthorized: false },
-      max: 5,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 1000,
+      // Pool sizing & timeouts tuned for serverless environments
+      max: Number(process.env.DB_POOL_MAX || 5),
+      idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || 10000),
+      connectionTimeoutMillis: Number(
+        process.env.DB_CONNECTION_TIMEOUT_MS || 10000
+      ),
+      statement_timeout: Number(process.env.DB_STATEMENT_TIMEOUT_MS || 10000),
+      query_timeout: Number(process.env.DB_QUERY_TIMEOUT_MS || 0) || undefined,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: Number(
+        process.env.DB_KEEPALIVE_INITIAL_DELAY_MS || 10000
+      ),
+      application_name: "status-tcioe",
     });
   }
 
