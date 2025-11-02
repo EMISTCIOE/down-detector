@@ -205,6 +205,7 @@ export async function GET(request: Request) {
   // Allow GET requests for manual triggering (with secret)
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get("secret");
+  const forceParam = String(searchParams.get("force") || "").toLowerCase();
 
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -215,6 +216,7 @@ export async function GET(request: Request) {
     method: "POST",
     headers: {
       authorization: `Bearer ${process.env.CRON_SECRET}`,
+      "x-force-check": forceParam === "1" || forceParam === "true" ? "1" : "0",
     },
   });
 
