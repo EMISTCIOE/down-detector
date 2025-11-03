@@ -538,32 +538,64 @@ async function generatePdf(data: ReportData): Promise<Uint8Array> {
     page.drawText(`${pct}%`, { x: chartX2 + chartWidth2 + 6, y: gy - 4, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
   });
   const pts2 = data.daily_uptime;
-  if (pts2.length > 1) {
+  const valid = pts2
+    .map((pt, idx) =>
+      pt.uptime_percentage == null
+        ? null
+        : { idx, val: Math.max(0, Math.min(100, pt.uptime_percentage)) }
+    )
+    .filter((x): x is { idx: number; val: number } => !!x);
+
+  const yForVal = (val: number) => {
+    const yRaw = chartY2 + (val / 100) * chartHeight2;
+    // keep 2px inset from borders so lines aren’t hidden by the frame
+    return Math.min(chartY2 + chartHeight2 - 2, Math.max(chartY2 + 2, yRaw));
+  };
+
+  if (valid.length >= 2) {
     const stepX = chartWidth2 / (pts2.length - 1);
-    let pathL = "";
-    let haveAny = false;
-    let started = false;
-    pts2.forEach((pt, idx) => {
-      const val = pt.uptime_percentage;
-      const px = chartX2 + stepX * idx;
-      if (val == null) { started = false; return; }
-      const py = chartY2 + (Math.max(0, Math.min(100, val)) / 100) * chartHeight2;
-      pathL += started ? ` L ${px} ${py}` : `M ${px} ${py}`;
-      started = true;
-      haveAny = true;
-    });
-    if (haveAny) {
-      page.drawSvgPath(pathL, { borderColor: rgb(0.13, 0.45, 0.84), color: undefined, borderWidth: 2 });
-    } else {
-      // No valid points in range
-      const msg = "No uptime data in this range";
-      const mw = font.widthOfTextAtSize(msg, 11);
-      page.drawText(msg, { x: chartX2 + (chartWidth2 - mw) / 2, y: chartY2 + chartHeight2/2 - 6, size: 11, font, color: rgb(0.4,0.4,0.4) });
+    let pathL = `M ${chartX2 + stepX * valid[0].idx} ${yForVal(valid[0].val)}`;
+    for (let i = 1; i < valid.length; i++) {
+      const px = chartX2 + stepX * valid[i].idx;
+      const py = yForVal(valid[i].val);
+      pathL += ` L ${px} ${py}`;
     }
-  } else {
-    const msg = "Not enough data to plot";
+    page.drawSvgPath(pathL, {
+      borderColor: rgb(0.13, 0.45, 0.84),
+      color: undefined,
+      borderWidth: 3,
+    });
+    // draw point markers for visibility even on borders
+    valid.forEach(({ idx, val }) => {
+      const px = chartX2 + stepX * idx;
+      const py = yForVal(val);
+      page.drawCircle({ x: px, y: py, size: 3, color: rgb(0.13, 0.45, 0.84) });
+    });
+  } else if (valid.length === 1) {
+    // Draw a single point marker and helper text
+    const stepX = chartWidth2 / Math.max(1, (pts2.length - 1) || 1);
+    const px = chartX2 + stepX * valid[0].idx;
+    const py = yForVal(valid[0].val);
+    page.drawCircle({ x: px, y: py, size: 3, color: rgb(0.13, 0.45, 0.84) });
+    const msg = "Only 1 day of uptime data";
     const mw = font.widthOfTextAtSize(msg, 11);
-    page.drawText(msg, { x: chartX2 + (chartWidth2 - mw) / 2, y: chartY2 + chartHeight2/2 - 6, size: 11, font, color: rgb(0.4,0.4,0.4) });
+    page.drawText(msg, {
+      x: chartX2 + (chartWidth2 - mw) / 2,
+      y: chartY2 + chartHeight2 / 2 - 6,
+      size: 11,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+  } else {
+    const msg = "No uptime data in this range";
+    const mw = font.widthOfTextAtSize(msg, 11);
+    page.drawText(msg, {
+      x: chartX2 + (chartWidth2 - mw) / 2,
+      y: chartY2 + chartHeight2 / 2 - 6,
+      size: 11,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
   }
 
   // Add signature block at bottom-right of this page without creating a third page
