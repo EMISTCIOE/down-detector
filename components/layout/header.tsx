@@ -13,7 +13,8 @@ export const Header = () => {
       {/* White bar like TCIOE site */}
       <div className="bg-white text-gray-900 border-b">
         <div className="container mx-auto px-4 py-3 md:py-4">
-          <div className="grid grid-cols-3 items-center gap-4">
+          {/* Use 2 columns on small screens; 3 on md+ for better spacing */}
+          <div className="grid grid-cols-2 md:grid-cols-3 items-center gap-4">
             {/* Left: Logo + institute */}
             <Link href="/" className="flex items-center gap-3 min-w-0">
               <Image
@@ -37,7 +38,7 @@ export const Header = () => {
             </Link>
 
             {/* Center: Page title */}
-            <div className="text-center">
+            <div className="text-center col-span-1">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="font-semibold text-sm md:text-base tracking-wide">
@@ -79,47 +80,37 @@ function UtilityBar() {
   return (
     <div className="bg-gray-100 text-gray-700 border-b">
       <div className="container mx-auto px-4 py-2 text-xs md:text-sm">
-        <div className="flex items-center justify-between">
-          {/* Left links */}
-          <nav className="flex items-center gap-3 md:gap-4">
-            <span className="text-gray-300">|</span>
-            <Link href="https://tcioe.edu.np" className="hover:text-gray-900">
-              TCIOE
-            </Link>
-            <span className="text-gray-300">|</span>
-          </nav>
-
-          {/* Right links */}
+        {/* Make the utility items horizontally scrollable on very small screens */}
+        <div className="flex items-center gap-3 md:gap-4 overflow-x-auto whitespace-nowrap scrollbar-none" role="navigation" aria-label="Utility links">
+          <Link href="https://tcioe.edu.np" className="hover:text-gray-900 flex-shrink-0">
+            TCIOE
+          </Link>
           <span className="text-gray-300">|</span>
-          <nav className="flex items-center gap-3 md:gap-4">
-            <a
-              href="https://library.tcioe.edu.np"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-900"
-            >
-              Library
-            </a>
-            <span className="text-gray-300">|</span>
-            <a
-              href="https://journal.tcioe.edu.np"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-900"
-            >
-              Journal
-            </a>
-            <span className="text-gray-300">|</span>
-            <Link
-              href="https://tcioe.edu.np/suggestion-box"
-              className="hover:text-gray-900"
-            >
-              <span className="hidden md:inline">Suggestions</span>
-
-              <span className="md:hidden">Suggest</span>
-              <span className="text-gray-300">|</span>
-            </Link>
-          </nav>
+          <a
+            href="https://library.tcioe.edu.np"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-900 flex-shrink-0"
+          >
+            Library
+          </a>
+          <span className="text-gray-300">|</span>
+          <a
+            href="https://journal.tcioe.edu.np"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-900 flex-shrink-0"
+          >
+            Journal
+          </a>
+          <span className="text-gray-300">|</span>
+          <Link
+            href="https://tcioe.edu.np/suggestion-box"
+            className="hover:text-gray-900 flex-shrink-0"
+          >
+            <span className="hidden md:inline">Suggestions</span>
+            <span className="md:hidden">Suggest</span>
+          </Link>
         </div>
       </div>
     </div>
@@ -130,6 +121,7 @@ function AnnouncementBar() {
   const [items, setItems] = useState<string[]>([]);
   const [visible, setVisible] = useState(false);
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -206,12 +198,40 @@ function AnnouncementBar() {
     };
   }, []);
 
+  // Auto-advance announcements every 6s, pause on tab hidden or hover
+  useEffect(() => {
+    if (!visible || items.length <= 1) return;
+
+    const onVisibility = () => {
+      // Pause when tab not visible
+      setPaused(document.hidden);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const t = setInterval(() => {
+      if (!paused) {
+        setIdx((i) => (i + 1) % items.length);
+      }
+    }, 6000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(t);
+    };
+  }, [visible, items.length, paused]);
+
   if (!visible || items.length === 0) return null;
   const onPrev = () => setIdx((i) => (i - 1 + items.length) % items.length);
   const onNext = () => setIdx((i) => (i + 1) % items.length);
   return (
-    <div className="bg-accent-orange text-white">
-      <div className="container mx-auto px-4 py-2 text-sm">
+    <div
+      className="bg-accent-orange text-white"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+    >
+      <div className="container mx-auto px-4 py-2 text-sm" aria-live="polite">
         <div className="flex items-center justify-center gap-3">
           <strong className="mr-1">Announcements</strong>
           {items.length > 1 && (
@@ -223,7 +243,7 @@ function AnnouncementBar() {
               <ChevronLeft className="w-4 h-4" />
             </button>
           )}
-          <div className="truncate max-w-[70vw] md:max-w-[60vw] text-center opacity-90">
+          <div className="truncate max-w-[78vw] md:max-w-[60vw] text-center opacity-90">
             {items[idx]}
           </div>
           {items.length > 1 && (

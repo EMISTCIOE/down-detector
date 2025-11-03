@@ -215,11 +215,20 @@ export default function HomePage() {
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-sm break-all">
-                        {service.url}
+                      <CardDescription className="mt-1">
+                        <a
+                          href={service.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={service.url}
+                          aria-label={`Open ${service.name} at ${service.url}`}
+                          className="block max-w-full text-xs md:text-sm text-primary-blue hover:underline whitespace-nowrap overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                        >
+                          {service.url}
+                        </a>
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
                       <Button
                         variant="outline"
                         size="sm"
