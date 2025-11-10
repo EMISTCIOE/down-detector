@@ -182,8 +182,9 @@ export default function HomePage() {
 
           {services.map((service) => {
             const history = serviceHistory[service.id] || [];
-            const last90Days = history.slice(-90); // Last 90 checks for graph
-            const dailyUptime = calculateDailyUptime(last90Days);
+            // Use full 30-day history returned by the API
+            // (previously only used last 90 checks, which could be < 30 days)
+            const dailyUptime = calculateDailyUptime(history);
 
             return (
               <Card
